@@ -8,22 +8,25 @@ const doneList = document.getElementById('done-list') as HTMLUListElement;
 type Todo = {
     id: number;
     text: string;
+    status: 'task' | 'done';
 };
 
-let todos: Todo[] = [] 
-let doneTasks: Todo[] = []
+let todos: Todo[] = []; 
 
 // 3. TASK 목록 렌더링 함수 
 const renderTasks = (): void => {
     todoList.innerHTML = '';
     doneList.innerHTML = '';
 
-    todos.forEach((todo): void => {
+    const taskTodos = todos.filter(t => t.status === 'task'); 
+    const doneTodos = todos.filter(t => t.status === 'done');
+
+    taskTodos.forEach((todo): void => {
         const li = createTodoElement(todo, false);
         todoList.appendChild(li);
     });
 
-    doneTasks.forEach((todo): void => {
+    doneTodos.forEach((todo): void => {
         const li = createTodoElement(todo, true);
         doneList.appendChild(li);
     });
@@ -36,21 +39,22 @@ const getTodoText = (): string => {
 
 // 5. TASK 추가 처리 함수
 const addTodo = (text: string): void => {
-    todos.push({ id:Date.now(), text});
+    todos.push({ id: Date.now(), text, status: 'task' });
     todoInput.value = '';
     renderTasks();
 };
 
 // 6. TASK 상태 변경 (DONE으로 이동)
 const completeTodo = (todo: Todo): void => {
-    todos = todos.filter((t): boolean => t.id !== todo.id);
-    doneTasks.push(todo);
+    todos = todos.map((t): Todo =>
+        t.id === todo.id ? { ...t, status: 'done' } : t
+    );
     renderTasks();
 };
 
 // 7. DONE 삭제 함수
 const deleteTodo = (todo: Todo): void => {
-    doneTasks = doneTasks.filter((t): boolean => t.id !== todo.id);
+    todos = todos.filter((t): boolean => t.id !== todo.id);
     renderTasks();
 };
 
@@ -71,17 +75,8 @@ const createTodoElement = (todo: Todo, isDone: boolean): HTMLLIElement => {
         button.style.backgroundColor = '#28a745';
     }
 
-    // <li class="render-container__item">
-    //     <p class="render-container__item-text">123</p>
-    //     <button class="render-container__item-button">삭제</button>
-    // </li>
-
     button.addEventListener('click', (): void => {
-        if (isDone) {
-            deleteTodo(todo);
-        } else {
-            completeTodo(todo);
-        }
+        isDone ? deleteTodo(todo) : completeTodo(todo);
     });
 
     li.appendChild(button);
@@ -98,3 +93,10 @@ todoForm.addEventListener('submit', (event: Event): void => {
 });
 
 renderTasks();
+
+/**
+ * filter: 배열에서 조건에 맞는 것만 남기고 나머지는 삭제 
+ * map: 배열의 모든 요소를 변환하여 새 배열 생성
+ * -> 배열을 두개로 관리할 때는 옮기는 과정이 필요해서 filter로 삭제 후에 다른 배열에 push
+ * -> 배열을 하나로 관리할 때는 상태만 바꾸면 되므로 map으로 값 변환
+ */
