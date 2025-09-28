@@ -3,7 +3,7 @@ import TodoForm from "./TodoForm";
 import { useTodo } from "../context/TodoContext";
 
 const Todo = () => {
-    const { todos, completeTodo, addTodo, deleteTodo, doneTodos } = useTodo();
+    const { todos, completeTodo, deleteTodo, doneTodos } = useTodo();
 
     return (
         <div className="todo-container">
@@ -12,7 +12,7 @@ const Todo = () => {
 
             <div className="render-container">
                 <TodoList
-                title="할 일"
+                title="TASK"
                 todos={todos}
                 buttonLabel="완료"
                 buttonColor="#28a745"
@@ -20,7 +20,7 @@ const Todo = () => {
                 />
 
                 <TodoList
-                title="완료"
+                title="DONE"
                 todos={doneTodos}
                 buttonLabel="삭제"
                 buttonColor="#dc3545"
