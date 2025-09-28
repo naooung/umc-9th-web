@@ -30,7 +30,7 @@ const TodoForm = () => {
                 required
             />
         <button type="submit" className="todo-container__button">
-          할 일 추가
+          +
         </button>
       </form>
     );
