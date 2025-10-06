@@ -1,88 +1,82 @@
-// src/pages/MovieDetail.tsx
-import { useParams } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
-import api, { TMDB_IMAGE } from '../apis/tmdb';
-import type { MovieDetails, Credits } from '../types/movie';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 
-export default function MovieDetail() {
-  const { movieId } = useParams();
-  const id = useMemo(() => Number(movieId), [movieId]);
+class NavIndicator {
+  private ul: HTMLUListElement;
+  private indicator: HTMLSpanElement;
 
-  const [movie, setMovie] = useState<MovieDetails | null>(null);
-  const [credits, setCredits] = useState<Credits | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  constructor(ul: HTMLUListElement) {
+    this.ul = ul;
+    this.indicator = document.createElement('span');
+    this.indicator.className =
+      'absolute -bottom-1 h-[2px] bg-red-600 rounded-full transition-all duration-300';
+    this.ul.appendChild(this.indicator);
+  }
+
+  update() {
+    const active = this.ul.querySelector<HTMLAnchorElement>('a[aria-current="page"]');
+    if (!active) return;
+    const ulRect = this.ul.getBoundingClientRect();
+    const aRect = active.getBoundingClientRect();
+    this.indicator.style.left = `${aRect.left - ulRect.left}px`;
+    this.indicator.style.width = `${aRect.width}px`;
+  }
+
+  destroy() {
+    this.indicator.remove();
+  }
+}
+
+export default function Layout() {
+  const { pathname } = useLocation();
+  const ulRef = useRef<HTMLUListElement | null>(null);
+  const indicatorRef = useRef<NavIndicator | null>(null);
 
   useEffect(() => {
-    if (!id) return;
-    const ac = new AbortController();
-    (async () => {
-      try {
-        setLoading(true);
-        setErr(null);
-        const [m, c] = await Promise.all([
-          api.get<MovieDetails>(`/movie/${id}`, { signal: ac.signal }),
-          api.get<Credits>(`/movie/${id}/credits`, { signal: ac.signal }),
-        ]);
-        setMovie(m.data);
-        setCredits(c.data);
-      } catch (e) {
-        if (!(e instanceof DOMException && e.name === 'AbortError')) {
-          setErr('상세 정보를 불러오지 못했습니다.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    })();
-    return () => ac.abort();
-  }, [id]);
+    if (!ulRef.current) return;
+    indicatorRef.current = new NavIndicator(ulRef.current);
+    indicatorRef.current.update();
 
-  if (err) return <div className="p-10 text-center text-red-600">{err}</div>;
-  if (loading || !movie) return <div className="h-64 grid place-items-center">로딩 중…</div>;
+    const handleResize = () => indicatorRef.current?.update();
+    window.addEventListener('resize', handleResize);
 
-  const director = credits?.crew.find((p) => p.job === 'Director')?.name;
+    return () => {
+      indicatorRef.current?.destroy();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    indicatorRef.current?.update();
+  }, [pathname]);
+
+  const navItems = [
+    { to: '/', label: '홈', exact: true },
+    { to: '/popular', label: '인기 영화' },
+    { to: '/upcoming', label: '개봉 예정' },
+    { to: '/top-rated', label: '평점 높은' },
+    { to: '/now-playing', label: '상영 중' },
+  ];
+
+  const base = 'text-black hover:text-red-600 transition-colors';
+  const active = 'text-red-600 font-bold';
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col md:flex-row gap-6">
-        <img
-          src={TMDB_IMAGE(movie.poster_path, 'w300')}
-          alt={movie.title}
-          className="rounded-xl shadow-lg bg-neutral-200"
-        />
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{movie.title}</h1>
-          <p className="text-gray-600 mb-2">
-            {movie.release_date?.slice(0, 4)} · 평점 {movie.vote_average.toFixed(1)} {director && `· 감독 ${director}`}
-          </p>
-          <p className="leading-relaxed">{movie.overview}</p>
-          {movie.genres?.length > 0 && (
-            <p className="mt-2 text-sm text-gray-600">
-              장르: {movie.genres.map((g) => g.name).join(', ')}
-            </p>
-          )}
-          {movie.runtime ? <p className="mt-1 text-sm text-gray-600">러닝타임: {movie.runtime}분</p> : null}
-        </div>
-      </div>
-
-      {credits?.cast?.length ? (
-        <div className="mt-10">
-          <h2 className="text-2xl font-semibold mb-4">감독/출연</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
-            {credits.cast.slice(0, 10).map((p) => (
-              <div key={p.id} className="text-center">
-                <img
-                  src={TMDB_IMAGE(p.profile_path, 'w200')}
-                  alt={p.name}
-                  className="rounded-full w-24 h-24 object-cover mx-auto mb-2 bg-neutral-200"
-                />
-                <p className="font-medium">{p.name}</p>
-                <p className="text-sm text-gray-500">{p.character}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+    <div className="min-h-dvh">
+      <nav className="fixed top-0 left-0 w-full h-14 px-5 flex items-center bg-white shadow-md z-50">
+        <ul ref={ulRef} className="relative flex gap-6 mx-auto">
+          {navItems.map(({ to, label, exact }) => (
+            <li key={to}>
+              <NavLink to={to} end={exact} className={({ isActive }) => (isActive ? active : base)}>
+                {label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <main className="pt-16">
+        <Outlet />
+      </main>
     </div>
   );
 }

@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --text: #e5e5e5;
+  --subtext: #9ca3af;
+  --accent: #ef4444;
+  --accent-hover: #dc2626;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+.card {
+  background-color: var(--card);
+  color: var(--text);
+}
+
+.btn-accent {
+  background-color: var(--accent);
+  color: white;
+  border-radius: 8px;
+  transition: background-color .2s ease;
+}
+.btn-accent:hover {
+  background-color: var(--accent-hover);
+}
